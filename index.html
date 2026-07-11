@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>原子弹结构与威力可视化 · Three.js</title>
+<title>核裂变与爆炸效应 · 交互式科学可视化</title>
 <style>
   :root{
-    --bg:#05070d; --panel:rgba(14,20,33,.86); --line:#1d2940;
+    --bg:#0b1524; --panel:rgba(16,25,41,.91); --line:#2b3d5b;
     --accent:#ff8a3d; --accent2:#4dd0ff; --danger:#ff4d4d; --txt:#e6edf6; --dim:#8da2bd;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -16,13 +16,15 @@
   canvas{display:block}
 
   #panel{position:fixed;top:16px;left:16px;width:330px;max-height:calc(100vh - 32px);
-    overflow-y:auto;background:var(--panel);backdrop-filter:blur(10px);
+    overflow-y:auto;background:var(--panel);
     border:1px solid var(--line);border-radius:14px;padding:18px 18px 22px;z-index:10}
   #panel::-webkit-scrollbar{width:7px}
   #panel::-webkit-scrollbar-thumb{background:#243352;border-radius:6px}
   h1{font-size:18px;letter-spacing:.5px;margin-bottom:2px;
     background:linear-gradient(90deg,var(--accent),var(--accent2));
     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .version{display:inline-block;margin-left:6px;padding:2px 6px;border:1px solid #47617f;border-radius:999px;
+    color:#a9c9eb;font-size:9px;line-height:1.2;vertical-align:2px;letter-spacing:.4px}
   .sub{font-size:11px;color:var(--dim);margin-bottom:14px}
   .group{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}
   .group h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:9px}
@@ -44,7 +46,7 @@
   .big.mush{background:linear-gradient(135deg,#7a6a55,#b9a07a);color:#1a130a}
 
   #info{position:fixed;top:16px;right:16px;width:290px;background:var(--panel);
-    backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;padding:16px;z-index:10}
+    border:1px solid var(--line);border-radius:14px;padding:16px;z-index:10}
   #info h3{font-size:14px;color:var(--accent);margin-bottom:4px}
   #info .en{font-size:11px;color:var(--dim);margin-bottom:9px}
   #info p{font-size:12px;line-height:1.65;color:#c4d2e6}
@@ -52,7 +54,7 @@
   #info .spec b{color:var(--accent2)}
 
   #stage{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);
+    background:var(--panel);border:1px solid var(--line);
     border-radius:30px;padding:9px 20px;font-size:12px;z-index:10;display:flex;align-items:center;gap:12px;white-space:nowrap}
   #stage .dot{width:9px;height:9px;border-radius:50%;background:var(--dim)}
   #stage.live .dot{background:var(--danger);box-shadow:0 0 12px var(--danger);animation:pulse 1s infinite}
@@ -68,6 +70,37 @@
 
   .hint{position:fixed;bottom:18px;right:18px;font-size:11px;color:var(--dim);z-index:10}
   #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8}
+
+  #modebar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:11;
+    display:flex;gap:5px;padding:5px;background:rgba(10,15,26,.96);
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 35px rgba(0,0,0,.28)}
+  #modebar button{min-width:112px;flex:none;padding:8px 14px}
+  #scienceHUD{position:fixed;left:366px;bottom:68px;width:310px;z-index:9;
+    background:linear-gradient(145deg,rgba(18,29,48,.94),rgba(11,20,35,.90));
+    border:1px solid var(--line);border-radius:14px;padding:14px}
+  #scienceHUD h3{font-size:12px;color:var(--accent2);letter-spacing:.8px;margin-bottom:10px}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .metric{background:rgba(255,255,255,.035);border:1px solid rgba(77,208,255,.12);border-radius:9px;padding:8px}
+  .metric small{display:block;color:var(--dim);font-size:10px;margin-bottom:3px}
+  .metric strong{font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+  .metric strong em{font-style:normal;font-size:10px;color:var(--dim);font-weight:400;margin-left:3px}
+  .bar-row{display:grid;grid-template-columns:64px 1fr 36px;gap:7px;align-items:center;margin-top:8px;font-size:10px;color:var(--dim)}
+  .bar{height:5px;background:#111a29;border-radius:9px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:inherit;transition:width .15s}
+  .annotation{margin-top:10px;padding:8px 9px;border-left:2px solid var(--accent);background:rgba(255,138,61,.07);
+    color:#cbd7e7;font-size:11px;line-height:1.55}
+  #timeScale{position:fixed;bottom:18px;left:18px;z-index:9;font-size:10px;color:var(--dim);
+    padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:rgba(8,12,22,.75)}
+  #timeline{position:fixed;left:366px;right:326px;top:70px;z-index:9;display:flex;gap:2px;pointer-events:none}
+  .time-step{flex:1;border-top:2px solid #263550;padding-top:7px;color:#657b99;font-size:10px;line-height:1.35}
+  .time-step b{display:block;font-size:11px;color:#8fa5c2;margin-bottom:2px}
+  .time-step.active{border-color:var(--accent);color:#d2dceb}.time-step.active b{color:var(--accent)}
+  .time-step.done{border-color:var(--accent2)}
+  #legend{position:fixed;right:18px;bottom:56px;z-index:9;width:290px;padding:11px 13px;border:1px solid var(--line);
+    border-radius:11px;background:rgba(8,12,22,.78);font-size:10px;line-height:1.55;color:var(--dim)}
+  #legend b{color:#cbd8e9}.swatch{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 4px 0 8px}
+  @media(max-width:1050px){#scienceHUD{left:auto;right:16px;bottom:70px}#info{display:none}#timeline{left:366px;right:16px}}
+  @media(max-width:760px){#panel{width:280px}#scienceHUD,#timeline,#legend{display:none}#modebar{top:auto;bottom:58px}#modebar button{min-width:auto}#stage{bottom:12px}}
 </style>
 </head>
 <body>
@@ -75,15 +108,21 @@
 <div id="labels"></div>
 <div id="flash"></div>
 
+<div id="modebar">
+  <button data-scene="mechanism" class="active">01 裂变机制</button>
+  <button data-scene="sequence">02 时间演化</button>
+  <button data-scene="effects">03 效应范围</button>
+</div>
+
 <div id="panel">
-  <h1>核裂变武器可视化</h1>
-  <div class="sub" id="subTitle">内爆式钚弹 (Fat Man 型) · 交互式三维模型</div>
+  <h1>核裂变与爆炸效应 <span class="version">v1.1</span></h1>
+  <div class="sub" id="subTitle">历史构型对照 · 交互式科学可视化</div>
 
   <div class="group">
     <h2>弹型</h2>
     <div class="seg" id="bombTypes">
-      <button data-type="fatman" class="active">内爆式 · 胖子</button>
-      <button data-type="littleboy">枪式 · 小男孩</button>
+      <button data-type="fatman" class="active">内爆式 · 历史构型</button>
+      <button data-type="littleboy">枪式 · 历史构型</button>
     </div>
   </div>
 
@@ -130,6 +169,27 @@
 </div>
 
 <div id="stage"><span class="dot"></span><span id="stageTxt">就绪 · 待命</span><span id="clock">T 0.0 µs</span></div>
+<div id="timeline">
+  <div class="time-step active" data-step="0"><b>装置阶段</b>微秒级</div>
+  <div class="time-step" data-step="1"><b>链式反应</b>约微秒</div>
+  <div class="time-step" data-step="2"><b>火球 / 冲击波</b>毫秒—秒</div>
+  <div class="time-step" data-step="3"><b>云团上升</b>秒—分钟</div>
+</div>
+<div id="scienceHUD">
+  <h3>实时物理读数 · 教学尺度</h3>
+  <div class="metric-grid">
+    <div class="metric"><small>链式反应代数</small><strong id="genValue">0</strong></div>
+    <div class="metric"><small>相对裂变速率</small><strong id="rateValue">0<em>%</em></strong></div>
+    <div class="metric"><small>模拟时间尺度</small><strong id="scaleValue">µs</strong></div>
+    <div class="metric"><small>当前主导现象</small><strong id="phenValue" style="font-size:13px">待机</strong></div>
+  </div>
+  <div class="bar-row"><span>冲击 / 动能</span><div class="bar"><i id="blastBar" style="background:#ff6b4a"></i></div><b>≈50%</b></div>
+  <div class="bar-row"><span>热辐射</span><div class="bar"><i id="thermalBar" style="background:#ffbd52"></i></div><b>≈35%</b></div>
+  <div class="bar-row"><span>初始辐射</span><div class="bar"><i id="radBar" style="background:#78e6ff"></i></div><b>≈5%</b></div>
+  <div class="annotation" id="scienceNote">重点：单次裂变释放中子；当每一代平均引发超过一次新裂变，反应数量便按代际指数增长。</div>
+</div>
+<div id="timeScale">荒漠试验场意象 · 演示压缩时间与空间比例，不可用于现实预测</div>
+<div id="legend"><b>能量分配为典型近似：</b><span class="swatch" style="background:#ff6b4a"></span>冲击约 50% <span class="swatch" style="background:#ffbd52"></span>热约 35% <span class="swatch" style="background:#78e6ff"></span>初始辐射约 5% · 其余主要为残余辐射。范围受高度、天气与地形强烈影响。</div>
 <div class="hint">鼠标拖动旋转 · 滚轮缩放 · 右键平移</div>
 
 <script type="importmap">
@@ -148,14 +208,21 @@ const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.localClippingEnabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.38;
 app.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05070d);
-scene.fog = new THREE.FogExp2(0x05070d, 0.00055);
+const skyCanvas=document.createElement('canvas');skyCanvas.width=8;skyCanvas.height=512;
+const skyCtx=skyCanvas.getContext('2d'),skyGrad=skyCtx.createLinearGradient(0,0,0,512);
+skyGrad.addColorStop(0,'#476b80');skyGrad.addColorStop(.58,'#8eabb3');skyGrad.addColorStop(1,'#dbc89d');
+skyCtx.fillStyle=skyGrad;skyCtx.fillRect(0,0,8,512);
+const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;
+scene.fog = new THREE.FogExp2(0xbca77f, 0.00062);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 8000);
 camera.position.set(130, 75, 175);
@@ -164,25 +231,77 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.06;
 controls.target.set(0,4,0);
 
-scene.add(new THREE.AmbientLight(0x405070, 0.9));
-const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(80,120,60); scene.add(key);
-const rim = new THREE.DirectionalLight(0x4dd0ff, 0.7); rim.position.set(-90,30,-70); scene.add(rim);
-const fill = new THREE.PointLight(0xff8a3d, 0.5, 600); fill.position.set(0,-40,80); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xcfe5eb,0x755331,1.75));
+scene.add(new THREE.AmbientLight(0x9ea58f, .9));
+const key = new THREE.DirectionalLight(0xffe0a6, 2.7); key.position.set(-180,260,110); key.castShadow=true;scene.add(key);
+const rim = new THREE.DirectionalLight(0x9ed9e9, .75); rim.position.set(160,70,-130); scene.add(rim);
+const fill = new THREE.PointLight(0xffb66b, .75, 760); fill.position.set(0,-10,100); scene.add(fill);
+const frontFill = new THREE.DirectionalLight(0xdbe7df,.65);frontFill.position.set(0,35,140);scene.add(frontFill);
 
-(function stars(){
-  const g=new THREE.BufferGeometry(); const n=1400,p=new Float32Array(n*3);
-  for(let i=0;i<n;i++){const r=1400+Math.random()*2600,t=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
-    p[i*3]=r*Math.sin(ph)*Math.cos(t);p[i*3+1]=r*Math.cos(ph);p[i*3+2]=r*Math.sin(ph)*Math.sin(t);}
+(function desertDust(){
+  const g=new THREE.BufferGeometry(); const n=950,p=new Float32Array(n*3);
+  for(let i=0;i<n;i++){const r=80+Math.random()*900,t=Math.random()*Math.PI*2;
+    p[i*3]=r*Math.cos(t);p[i*3+1]=-62+Math.random()*75;p[i*3+2]=r*Math.sin(t);}
   g.setAttribute('position',new THREE.BufferAttribute(p,3));
-  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x6b7da0,size:1.4,sizeAttenuation:false})));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xe0c18d,size:1.2,transparent:true,opacity:.24,sizeAttenuation:false,depthWrite:false})));
 })();
 
 const clip = new THREE.Plane(new THREE.Vector3(0,0,-1), 1000); // 剖面裁剪
 const groundY = -70;
 
+/* 新墨西哥荒漠风格环境：沙砾地、远山、岩石与稀疏灌木 */
+const environment=new THREE.Group();scene.add(environment);
+const duneGeo=new THREE.PlaneGeometry(2200,2200,90,90),dp=duneGeo.attributes.position;
+for(let i=0;i<dp.count;i++){
+  const x=dp.getX(i),y=dp.getY(i),r=Math.hypot(x,y);
+  const h=Math.sin(x*.008)*5+Math.sin(y*.011+x*.003)*3+Math.sin((x-y)*.021)*1.2;
+  dp.setZ(i,h*(.35+.65*Math.min(1,r/360)));
+}
+duneGeo.computeVertexNormals();
+const ground=new THREE.Mesh(duneGeo,new THREE.MeshStandardMaterial({color:0xa77a47,roughness:1,metalness:0}));
+ground.rotation.x=-Math.PI/2;ground.position.y=groundY-2;ground.receiveShadow=true;environment.add(ground);
+
+// 很淡的尺度网格只在沙地上提供距离参照
+const horizonGrid=new THREE.GridHelper(1800,36,0xc3a16f,0x8c6a43);horizonGrid.position.y=groundY+.15;
+horizonGrid.material.transparent=true;horizonGrid.material.opacity=.07;environment.add(horizonGrid);
+
+// 远处山脊围合地平线
+const mountainMat=new THREE.MeshStandardMaterial({color:0x76583d,roughness:1,flatShading:true});
+for(let i=0;i<54;i++){
+  const a=i/54*Math.PI*2+(Math.random()-.5)*.035,r=860+Math.random()*90,w=155+Math.random()*125,h=65+Math.random()*105;
+  const peak=new THREE.Mesh(new THREE.ConeGeometry(w,h,7+Math.floor(Math.random()*3)),mountainMat);
+  peak.position.set(Math.cos(a)*r,groundY+h*.22,Math.sin(a)*r);peak.scale.z=.32+Math.random()*.25;peak.rotation.y=-a+Math.random()*.35;environment.add(peak);
+}
+
+// 沙漠岩石与灌木，中央试验区域保持开阔
+const rockMat=new THREE.MeshStandardMaterial({color:0x705239,roughness:.96,flatShading:true});
+const scrubMat=new THREE.MeshStandardMaterial({color:0x525238,roughness:1,flatShading:true});
+for(let i=0;i<85;i++){
+  const a=Math.random()*Math.PI*2,r=145+Math.random()*590,s=1.5+Math.random()*4.8;
+  const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),rockMat);rock.position.set(Math.cos(a)*r,groundY+s*.35,Math.sin(a)*r);rock.scale.y=.45+Math.random()*.45;rock.rotation.set(Math.random(),Math.random()*Math.PI,Math.random());environment.add(rock);
+}
+for(let i=0;i<115;i++){
+  const a=Math.random()*Math.PI*2,r=130+Math.random()*640,s=1.2+Math.random()*2.6;
+  const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0),scrubMat);shrub.position.set(Math.cos(a)*r,groundY+s*.42,Math.sin(a)*r);shrub.scale.set(1.8,.75,1.35);shrub.rotation.y=Math.random()*Math.PI;environment.add(shrub);
+}
+
+// 历史试验场意象：抽象钢塔，仅作为环境叙事和高度参照
+const tower=new THREE.Group(),towerMat=new THREE.MeshStandardMaterial({color:0x6f604d,metalness:.72,roughness:.55});
+for(const x of [-9,9])for(const z of [-9,9]){
+  const leg=new THREE.Mesh(new THREE.CylinderGeometry(.7,1.3,58,8),towerMat);leg.position.set(x,groundY+29,z);leg.rotation.z=x*.002;leg.rotation.x=-z*.002;tower.add(leg);
+}
+for(let y=groundY+8;y<groundY+57;y+=10){
+  for(const rot of [0,Math.PI/2]){const brace=new THREE.Mesh(new THREE.BoxGeometry(25,.65,.65),towerMat);brace.position.y=y;brace.rotation.y=rot;tower.add(brace);}
+}
+const platform=new THREE.Mesh(new THREE.BoxGeometry(24,2,24),towerMat);platform.position.y=groundY+59;tower.add(platform);environment.add(tower);
+
+const sun=new THREE.Mesh(new THREE.SphereGeometry(48,24,16),new THREE.MeshBasicMaterial({color:0xffe2a3}));
+sun.position.set(-720,520,-980);environment.add(sun);
+
 function makeMat(color, opts={}){
   return new THREE.MeshStandardMaterial(Object.assign({
-    color, metalness:.55, roughness:.4, clippingPlanes:[clip], clipShadows:true, side:THREE.DoubleSide
+    color, metalness:.55, roughness:.4, emissive:0x08121f,emissiveIntensity:.22,
+    clippingPlanes:[clip], clipShadows:true, side:THREE.DoubleSide
   }, opts));
 }
 
@@ -202,42 +321,42 @@ function buildFatMan(){
 
   // 外壳 (椭球)
   let g=new THREE.SphereGeometry(R.casing,64,48); g.scale(1,1.28,1);
-  let m=makeMat(0x3a4252,{metalness:.7,roughness:.35,transparent:true});
+  let m=makeMat(0x5a6b80,{metalness:.7,roughness:.35,transparent:true});
   add({key:'casing',name:'弹道外壳 / 弹体',en:'Ballistic Casing',mesh:new THREE.Mesh(g,m),mat:m,outR:R.casing*1.28,explodeDir:new THREE.Vector3(0,1,0),
     desc:'高强度钢制气动外壳，保护内部精密装置并赋予炸弹稳定弹道。"胖子" 弹体直径约 1.5 m，重约 4.6 吨。外壳不参与核反应，仅起承载与气动作用。',
     spec:'材料 <b>高强度钢</b> · 直径 <b>~1.5 m</b> · 全重 <b>~4.6 t</b>'});
   // 尾翼
   {const fg=new THREE.BoxGeometry(2,26,22),fm=makeMat(0x2c333f,{metalness:.6});
    for(let i=0;i<4;i++){const f=new THREE.Mesh(fg,fm),a=i*Math.PI/2;f.position.set(Math.cos(a)*40,-52,Math.sin(a)*40);f.lookAt(0,-52,0);f.rotateY(Math.PI/2);group.add(f);}}
-  // 炸药透镜 ×32
+  // 对称压缩层（抽象）
   const lensGroup=new THREE.Group();
   let lm=makeMat(0xb56b2e,{metalness:.15,roughness:.75,emissive:0x000000});
   lensGroup.add(new THREE.Mesh(new THREE.SphereGeometry(R.lens,48,32),lm));
   lensGroup.add(new THREE.Mesh(new THREE.IcosahedronGeometry(R.lens+0.25,1),
     new THREE.MeshBasicMaterial({color:0x000000,wireframe:true,transparent:true,opacity:.35,clippingPlanes:[clip]})));
-  add({key:'lens',name:'高能炸药透镜 ×32',en:'Explosive Lenses',mesh:lensGroup,mat:lm,outR:R.lens,explodeDir:new THREE.Vector3(0.9,0.5,0).normalize(),
-    desc:'32 块精密铸造的炸药“透镜”，由快速与慢速炸药组合而成。它们将向外发散的爆轰波重塑为完美的、向心汇聚的球面冲击波——这是内爆法的技术核心。所有透镜必须在微秒级同步起爆。',
-    spec:'炸药 <b>Composition B / Baratol</b> · 块数 <b>32</b> · 同步精度 <b>&lt; 1 µs</b>'});
+  add({key:'lens',name:'对称压缩层（概念）',en:'Symmetric compression concept',mesh:lensGroup,mat:lm,outR:R.lens,explodeDir:new THREE.Vector3(0.9,0.5,0).normalize(),
+    desc:'这一抽象层用来说明“从各方向同时压缩”的概念。可视化只强调冲击波向中心汇聚，不呈现真实部件的配方、数量、尺寸或时序。',
+    spec:'教学重点 <b>对称性 / 向心汇聚</b> · 几何 <b>非工程比例</b>'});
   // 铝推进层
   m=makeMat(0x9aa3ad,{metalness:.85,roughness:.3});
-  add({key:'push',name:'铝推进层',en:'Aluminium Pusher',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.push,48,32),m),mat:m,outR:R.push,explodeDir:new THREE.Vector3(-0.9,0.4,0.2).normalize(),
-    desc:'位于炸药与铀反射层之间的铝合金壳。它平滑爆轰冲击波、抑制瑞利–泰勒不稳定性，使冲击波更均匀地传入致密的铀层，避免内爆失对称。',
-    spec:'材料 <b>铝合金</b> · 作用 <b>整形冲击波 / 抑制不稳定性</b>'});
+  add({key:'push',name:'波形传递层（概念）',en:'Wave-transfer layer',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.push,48,32),m),mat:m,outR:R.push,explodeDir:new THREE.Vector3(-0.9,0.4,0.2).normalize(),
+    desc:'抽象表示冲击波从外层向核心传递的界面。真实流体与材料响应远比这里复杂，本模型只显示径向传播方向。',
+    spec:'教学重点 <b>压力波传递</b> · 材料 <b>未建模</b>'});
   // 铀夯实层
   m=makeMat(0x55606e,{metalness:.9,roughness:.25});
-  add({key:'tamper',name:'铀-238 反射 / 夯实层',en:'U-238 Tamper',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.tamper,48,32),m),mat:m,outR:R.tamper,explodeDir:new THREE.Vector3(0.3,-0.9,0.3).normalize(),
-    desc:'高密度天然铀(U-238)外壳。双重作用：① 凭惯性“夯住”爆炸中的核心，延长其维持超临界的时间；② 把逃逸的中子反射回核心，提高反应效率。部分 U-238 还会被快中子裂变，额外贡献当量。',
-    spec:'材料 <b>U-238</b> · 作用 <b>惯性约束 + 中子反射</b>'});
+  add({key:'tamper',name:'惯性 / 中子边界层（概念）',en:'Inertial and neutron boundary',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.tamper,48,32),m),mat:m,outR:R.tamper,explodeDir:new THREE.Vector3(0.3,-0.9,0.3).normalize(),
+    desc:'抽象表示两种效应：惯性会短暂延缓核心膨胀，中子边界条件会改变逃逸概率。这里不对应真实材料或尺寸。',
+    spec:'教学重点 <b>惯性约束 + 中子损失</b>'});
   // 钚核
   m=makeMat(0x6fae7a,{metalness:.95,roughness:.18,emissive:0x0c2410,emissiveIntensity:.4});
-  add({key:'pit',name:'钚-239 核心',en:'Plutonium Pit',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.pit,48,32),m),mat:m,outR:R.pit,explodeDir:new THREE.Vector3(0,0,1),
-    desc:'武器级钚-239 制成的次临界球(约 6.2 kg)。常态密度不足以维持链式反应。内爆冲击波将其瞬间压缩至约两倍密度，越过临界点进入“超临界”，引发指数增长的裂变链式反应——这就是爆炸的能量之源。',
-    spec:'材料 <b>Pu-239 (武器级)</b> · 质量 <b>~6.2 kg</b> · 压缩 <b>≈2× 密度</b>'});
+  add({key:'pit',name:'裂变核心（概念）',en:'Fissile core concept',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.pit,48,32),m),mat:m,outR:R.pit,explodeDir:new THREE.Vector3(0,0,1),
+    desc:'核心最初不能维持快速增长的链式反应。密度与几何改变后，中子更可能在逃逸前引发下一次裂变，系统短暂进入超临界，裂变率按代际指数上升。',
+    spec:'关键变量 <b>密度 / 几何 / 中子损失</b> · 显示 <b>概念模型</b>'});
   // 中子源
   m=makeMat(0xffe14d,{metalness:.4,roughness:.3,emissive:0x4a3a00,emissiveIntensity:.6});
-  add({key:'init',name:'中子引爆源 (海胆)',en:'Neutron Initiator',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.init,32,24),m),mat:m,outR:R.init,explodeDir:new THREE.Vector3(0,0,-1),
-    desc:'位于正中心的钋-210/铍中子源。当冲击波到达、核心被压缩到超临界的“黄金时刻”，它被挤压并瞬间释放大量自由中子，作为链式反应的“火花塞”——精确点燃整个裂变过程，避免提前哑爆。',
-    spec:'材料 <b>Po-210 + Be</b> · 作用 <b>精准触发链式反应</b>'});
+  add({key:'init',name:'初始中子（概念）',en:'Initial neutron population',mesh:new THREE.Mesh(new THREE.SphereGeometry(R.init,32,24),m),mat:m,outR:R.init,explodeDir:new THREE.Vector3(0,0,-1),
+    desc:'自由中子为第一代裂变提供起点。真正决定反应是否指数增长的，是每一代平均留下多少个能够继续诱发裂变的中子。',
+    spec:'教学重点 <b>代际增殖因子</b> · 显示 <b>非真实部件</b>'});
 
   // 中心闪光 / 冲击波
   const core=new THREE.Mesh(new THREE.SphereGeometry(R.init,32,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,blending:THREE.AdditiveBlending}));
@@ -249,8 +368,8 @@ function buildFatMan(){
   const labelDefs=[{key:'casing',pos:new THREE.Vector3(0,58,0)},{key:'lens',pos:new THREE.Vector3(-38,8,0)},
     {key:'tamper',pos:new THREE.Vector3(25,-14,8)},{key:'pit',pos:new THREE.Vector3(10,10,12)},{key:'init',pos:new THREE.Vector3(0,0,0)}];
 
-  const phases=[{t:0,txt:'雷管同步引爆 · 32 透镜点火'},{t:1.2,txt:'爆轰波向心汇聚'},{t:2.4,txt:'冲击波压缩核心 → 超临界'},
-    {t:3.0,txt:'中子源触发 · 链式反应点燃'},{t:3.4,txt:'裂变链指数增长 · 能量释放'},{t:4.2,txt:'火球形成 · 弹体气化'}];
+  const phases=[{t:0,txt:'对称压缩开始（概念演示）'},{t:1.2,txt:'冲击波向心汇聚'},{t:2.4,txt:'密度上升 → 短暂超临界'},
+    {t:3.0,txt:'第一代裂变发生'},{t:3.4,txt:'裂变代数指数增长 · 能量释放'},{t:4.2,txt:'高温等离子体形成火球'}];
 
   function seq(t){
     const lens=layers.find(l=>l.key==='lens'), pit=layers.find(l=>l.key==='pit');
@@ -277,7 +396,7 @@ function buildFatMan(){
     layers.forEach(L=>{L.mesh.scale.setScalar(1);L.mat.emissiveIntensity=(L.key==='pit')?.4:(L.key==='init')?.6:0;L.mat.emissive.set((L.key==='pit')?0x0c2410:(L.key==='init')?0x4a3a00:0x000000);});
   }
   return {type:'fatman',group,layers,labelDefs,phases,seq,resetVisual,defaultKey:'pit',
-    sub:'内爆式钚弹 (Fat Man 型) · 交互式三维模型',infoTitle:'内爆式核装置',infoEn:'Implosion-type fission device'};
+    sub:'内爆式历史构型 · 概念剖面（非工程比例）',infoTitle:'内爆式历史构型',infoEn:'Implosion concept'};
 }
 
 /* ============================================================ ② 枪式 · 小男孩 ============================================================ */
@@ -291,7 +410,7 @@ function buildLittleBoy(){
 
   // 外壳 (圆柱 + 头锥 + 尾)
   const cas=new THREE.Group();
-  let m=makeMat(0x3a4252,{metalness:.7,roughness:.35,transparent:true});
+  let m=makeMat(0x5a6b80,{metalness:.7,roughness:.35,transparent:true});
   const body=new THREE.Mesh(new THREE.CylinderGeometry(26,26,H*1.55,48,1,true),m); cas.add(body);
   const nose=new THREE.Mesh(new THREE.ConeGeometry(26,40,48),m); nose.position.y=-H*0.9; cas.add(nose);
   const tail=new THREE.Mesh(new THREE.CylinderGeometry(26,20,30,48),m); tail.position.y=H*0.85; cas.add(tail);
@@ -305,46 +424,46 @@ function buildLittleBoy(){
   // 枪管 (钢炮管)
   m=makeMat(0x4a5360,{metalness:.85,roughness:.3});
   const barrel=new THREE.Mesh(new THREE.CylinderGeometry(13,13,H*1.7,40,1,true),m);
-  add({key:'barrel',name:'枪管 / 炮管',en:'Gun Barrel',mesh:barrel,mat:m,outR:14,explodeDir:new THREE.Vector3(-1,0,0),
-    desc:'一根高强度钢炮管，是“枪式”名称的由来。它把后端的铀弹丸沿管道加速射向前端的铀靶环——用最朴素的“开炮”方式实现两块次临界铀的瞬间合体。',
-    spec:'结构 <b>无缝钢炮管</b> · 作用 <b>引导弹丸高速撞击</b>'});
+  add({key:'barrel',name:'组合通道（概念）',en:'Assembly path concept',mesh:barrel,mat:m,outR:14,explodeDir:new THREE.Vector3(-1,0,0),
+    desc:'历史构型因此被称为“枪式”。动画只把它表示为两个次临界部分改变相对位置的路径，不呈现真实机械结构。',
+    spec:'教学重点 <b>几何快速改变</b> · 结构 <b>抽象示意</b>'});
 
   // 钨/钢 夯实反射层 (包住靶)
   m=makeMat(0x55606e,{metalness:.9,roughness:.25});
   const tamper=new THREE.Mesh(new THREE.CylinderGeometry(20,20,46,40),m); tamper.position.y=targetY+6;
-  add({key:'tamper',name:'碳化钨夯实 / 反射层',en:'Tungsten Tamper',mesh:tamper,mat:m,outR:20,explodeDir:new THREE.Vector3(0.6,-0.6,0).normalize(),
-    desc:'包裹在铀靶外的高密度碳化钨/钢反射层。撞击合体后，它把逃逸中子反射回铀块、并以惯性短暂约束正在爆炸的核心，提高裂变效率。',
-    spec:'材料 <b>WC / 钢</b> · 作用 <b>中子反射 + 惯性约束</b>'});
+  add({key:'tamper',name:'中子边界层（概念）',en:'Neutron boundary concept',mesh:tamper,mat:m,outR:20,explodeDir:new THREE.Vector3(0.6,-0.6,0).normalize(),
+    desc:'抽象表示周围边界对中子逃逸与系统惯性响应的影响，不对应真实材料、厚度或性能。',
+    spec:'教学重点 <b>中子泄漏 / 惯性响应</b>'});
 
   // 铀-235 靶环 (空心圆柱, 在前端)
   m=makeMat(0x8f9aa6,{metalness:.95,roughness:.18,emissive:0x101418,emissiveIntensity:.2});
   const target=new THREE.Mesh(new THREE.CylinderGeometry(12,12,34,40,1,false),m); target.position.y=targetY+6;
   // 中空: 用一个内孔示意 (再叠一个深色内圆柱)
   group.add(new THREE.Mesh(new THREE.CylinderGeometry(7,7,35,32),new THREE.MeshBasicMaterial({color:0x0a0d12,clippingPlanes:[clip]}))).position.y=targetY+6;
-  add({key:'target',name:'铀-235 靶环 (次临界)',en:'U-235 Target',mesh:target,mat:m,outR:12,explodeDir:new THREE.Vector3(0.9,-0.3,0).normalize(),
-    desc:'空心环状的武器级铀-235，固定在炮口端，本身处于次临界、不会自持反应。它在等待后方弹丸冲入其空腔——两半合体的瞬间总质量越过临界点。',
-    spec:'材料 <b>U-235 (~80% 富集)</b> · 形态 <b>空心靶环</b>'});
+  add({key:'target',name:'次临界部分 A（概念）',en:'Subcritical part A',mesh:target,mat:m,outR:12,explodeDir:new THREE.Vector3(0.9,-0.3,0).normalize(),
+    desc:'单独存在时，中子损失大于增殖，链式反应不能快速自持。历史枪式构型通过快速改变整体几何来降低中子逃逸概率。',
+    spec:'教学重点 <b>表面积 / 体积比与中子泄漏</b>'});
 
   // 铀-235 弹丸 (实心柱塞, 在后端, 会下射)
   m=makeMat(0x9fa9b4,{metalness:.95,roughness:.18,emissive:0x101418,emissiveIntensity:.2});
   const proj=new THREE.Mesh(new THREE.CylinderGeometry(6.6,6.6,30,40),m); proj.position.y=projHomeY;
-  add({key:'proj',name:'铀-235 弹丸 (次临界)',en:'U-235 Projectile',mesh:proj,mat:m,outR:7,explodeDir:new THREE.Vector3(0.9,0.5,0).normalize(),
-    desc:'实心圆柱形的武器级铀-235 弹丸，可嵌入靶环空腔。发射前同样次临界。当它被发射药轰出、高速撞入靶环，两块铀合为一个超临界整体，链式反应随即爆发。',
-    spec:'材料 <b>U-235</b> · 形态 <b>实心柱塞</b> · 速度 <b>~300 m/s</b>'});
+  add({key:'proj',name:'次临界部分 B（概念）',en:'Subcritical part B',mesh:proj,mat:m,outR:7,explodeDir:new THREE.Vector3(0.9,0.5,0).normalize(),
+    desc:'第二个次临界部分在动画中移动，与部分 A 组合。这里仅展示“几何改变导致中子增殖条件改变”，尺寸和运动参数均为视觉示意。',
+    spec:'教学重点 <b>组合前后临界状态变化</b> · 参数 <b>非工程值</b>'});
 
-  // 发射药 (Cordite, 弹丸后方)
+  // 驱动段（抽象）
   m=makeMat(0x6b4a2a,{metalness:.1,roughness:.85,emissive:0x000000});
   const prop=new THREE.Mesh(new THREE.CylinderGeometry(11,11,26,32),m); prop.position.y=projHomeY+26;
-  add({key:'prop',name:'发射药 (无烟火药)',en:'Cordite Propellant',mesh:prop,mat:m,outR:11,explodeDir:new THREE.Vector3(0.6,0.7,0).normalize(),
-    desc:'常规无烟火药包，由电雷管点燃。它就是这门“炮”的炮弹推进剂——燃气压力把铀弹丸沿枪管加速到约 300 m/s，完成两块铀的撞击合体。',
-    spec:'类型 <b>Cordite 无烟火药</b> · 作用 <b>发射弹丸</b>'});
+  add({key:'prop',name:'驱动段（概念）',en:'Assembly driver concept',mesh:prop,mat:m,outR:11,explodeDir:new THREE.Vector3(0.6,0.7,0).normalize(),
+    desc:'这一抽象段只表示历史构型中推动几何快速改变的驱动过程，不呈现真实材料、尺寸或性能参数。',
+    spec:'显示 <b>概念运动</b> · 不含 <b>工程参数</b>'});
 
   // 中子源 (靶心)
   m=makeMat(0xffe14d,{metalness:.4,roughness:.3,emissive:0x4a3a00,emissiveIntensity:.6});
   const initM=new THREE.Mesh(new THREE.SphereGeometry(3.2,24,18),m); initM.position.y=targetY+6;
-  add({key:'init',name:'中子引爆源',en:'Neutron Initiator',mesh:initM,mat:m,outR:3.2,explodeDir:new THREE.Vector3(0,-1,0),
-    desc:'位于靶心的钋-铍中子源。当弹丸撞入、装置进入超临界的瞬间被激活，喷出自由中子点燃链式反应，确保在最佳时刻起爆。',
-    spec:'材料 <b>Po-Be</b> · 作用 <b>触发链式反应</b>'});
+  add({key:'init',name:'初始中子（概念）',en:'Initial neutron population',mesh:initM,mat:m,outR:3.2,explodeDir:new THREE.Vector3(0,-1,0),
+    desc:'自由中子让动画中的第一代裂变开始。随后是否增长由系统的有效中子增殖因子决定。',
+    spec:'教学重点 <b>链式反应起始条件</b>'});
 
   // 闪光 / 灯光 (靶位)
   const core=new THREE.Mesh(new THREE.SphereGeometry(3,32,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,blending:THREE.AdditiveBlending}));
@@ -386,10 +505,73 @@ function buildLittleBoy(){
       L.mat.emissive.set((L.key==='init')?0x4a3a00:(L.key==='target'||L.key==='proj')?0x101418:0x000000);});
   }
   return {type:'littleboy',group,layers,labelDefs,phases,seq,resetVisual,defaultKey:'target',
-    sub:'枪式铀弹 (Little Boy 型) · 交互式三维模型',infoTitle:'枪式核装置',infoEn:'Gun-type fission device'};
+    sub:'枪式历史构型 · 概念剖面（非工程比例）',infoTitle:'枪式历史构型',infoEn:'Gun-type concept'};
 }
 
 const BOMBS = { fatman:buildFatMan(), littleboy:buildLittleBoy() };
+
+/* ============================================================ 裂变链：概念粒子可视化 ============================================================ */
+const chainViz=(function(){
+  const group=new THREE.Group();group.visible=false;scene.add(group);
+  const max=520,pos=new Float32Array(max*3),col=new Float32Array(max*3),seed=[];
+  for(let i=0;i<max;i++){
+    const v=new THREE.Vector3().randomDirection(),birth=Math.pow(i/max,.43);
+    seed.push({v,birth,wobble:Math.random()*6.28});
+    col[i*3]=.35;col[i*3+1]=.85;col[i*3+2]=1;
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const cv=document.createElement('canvas');cv.width=cv.height=32;const c=cv.getContext('2d'),g=c.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,'#fff');g.addColorStop(.25,'#72eaff');g.addColorStop(1,'rgba(80,190,255,0)');c.fillStyle=g;c.fillRect(0,0,32,32);
+  const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:5,map:new THREE.CanvasTexture(cv),vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));group.add(pts);
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),new THREE.MeshBasicMaterial({color:0xffc159,wireframe:true,transparent:true,opacity:.18}));group.add(shell);
+  function reset(){group.visible=false;}
+  function update(progress,time,origin){
+    group.visible=progress>0&&progress<1.06;group.position.copy(origin);group.scale.setScalar(1);
+    const count=Math.floor(3*Math.pow(2,Math.min(7.45,progress*8.2))),a=geo.attributes.position.array;
+    for(let i=0;i<max;i++){
+      const s=seed[i],live=i<count&&s.birth<progress+.08,age=Math.max(0,progress-s.birth);
+      const radius=4+age*42+(i%7)*.55,w=Math.sin(time*5+s.wobble)*1.8;
+      a[i*3]=live?s.v.x*radius+w:0;a[i*3+1]=live?s.v.y*radius+w*.3:0;a[i*3+2]=live?s.v.z*radius-w*.4:0;
+    }
+    geo.setDrawRange(0,Math.min(max,count));geo.attributes.position.needsUpdate=true;
+    shell.scale.setScalar(5+progress*24);shell.rotation.y=time*.8;shell.rotation.x=time*.35;
+    return {generation:Math.min(80,Math.floor(progress*80)),rate:Math.min(100,Math.round(Math.pow(progress,3)*100))};
+  }
+  return{update,reset,get visible(){return group.visible;}};
+})();
+
+/* ============================================================ 宏观爆炸现象：火球、热脉冲、冲击波、凝结云 ============================================================ */
+const phenomena=(function(){
+  const group=new THREE.Group();group.visible=false;scene.add(group);
+  const glowMat=new THREE.MeshBasicMaterial({color:0xfff4d0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
+  const fireball=new THREE.Mesh(new THREE.SphereGeometry(1,64,40),glowMat);fireball.position.y=groundY+25;group.add(fireball);
+  const inner=new THREE.PointLight(0xff8a30,0,1800,1.5);inner.position.copy(fireball.position);group.add(inner);
+  const shock=new THREE.Mesh(new THREE.SphereGeometry(1,64,32),new THREE.MeshBasicMaterial({color:0xbdefff,transparent:true,opacity:0,wireframe:true,depthWrite:false}));
+  shock.position.y=groundY+20;shock.scale.y=.62;group.add(shock);
+  const mach=new THREE.Mesh(new THREE.RingGeometry(.985,1,128),new THREE.MeshBasicMaterial({color:0xe8f8ff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
+  mach.rotation.x=-Math.PI/2;mach.position.y=groundY+1;group.add(mach);
+  const thermal=new THREE.Mesh(new THREE.CircleGeometry(1,128),new THREE.MeshBasicMaterial({color:0xff692e,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+  thermal.rotation.x=-Math.PI/2;thermal.position.y=groundY+.5;group.add(thermal);
+  const cloud=new THREE.Mesh(new THREE.TorusGeometry(1,.10,16,128),new THREE.MeshBasicMaterial({color:0xf1f8ff,transparent:true,opacity:0,depthWrite:false}));
+  cloud.rotation.x=Math.PI/2;cloud.position.y=groundY+38;group.add(cloud);
+  let active=false,time=0;
+  function start(){active=true;time=0;group.visible=true;}
+  function reset(){active=false;time=0;group.visible=false;glowMat.opacity=0;inner.intensity=0;}
+  function update(dt){
+    if(!active)return null;time+=dt;
+    // 演示时间是非线性压缩：最初毫秒被拉长，随后秒级演化加速
+    const fireP=Math.min(1,time/1.65),shockP=Math.min(1,time/5.8),heatP=Math.min(1,time/2.8);
+    fireball.scale.setScalar(2+165*(1-Math.exp(-fireP*4.2)));
+    glowMat.opacity=Math.max(0,.96-time*.105);glowMat.color.setHSL(.13-Math.min(.105,time*.012),1,.58);
+    inner.intensity=Math.max(0,6500-time*650);
+    const sr=25+shockP*760;shock.scale.set(sr,sr*.62,sr);shock.material.opacity=Math.max(0,.33-shockP*.27);
+    mach.scale.setScalar(sr);mach.material.opacity=Math.max(0,.75-shockP*.62);
+    thermal.scale.setScalar(30+heatP*480);thermal.material.opacity=Math.max(0,.18-time*.025);
+    const cp=Math.min(1,Math.max(0,(time-.65)/2.8));cloud.scale.setScalar(28+cp*220);cloud.material.opacity=Math.sin(cp*Math.PI)*.58;
+    return {time,phase:time<.7?'火球膨胀':time<3.2?'热脉冲 / 冲击波':time<6?'冲击波传播':'浮力云团'};
+  }
+  return{start,reset,update,get active(){return active;},get time(){return time;}};
+})();
 
 /* ============================================================ 蘑菇云 (粒子) ============================================================ */
 const mushroom = (function(){
@@ -466,7 +648,12 @@ const layerBtns=document.getElementById('layerBtns');
 const stage=document.getElementById('stage'),stageTxt=document.getElementById('stageTxt'),clock=document.getElementById('clock');
 const flash=document.getElementById('flash');
 const speedV=document.getElementById('speedV'),yieldV=document.getElementById('yieldV');
+const genValue=document.getElementById('genValue'),rateValue=document.getElementById('rateValue');
+const scaleValue=document.getElementById('scaleValue'),phenValue=document.getElementById('phenValue');
+const scienceNote=document.getElementById('scienceNote');
+const blastBar=document.getElementById('blastBar'),thermalBar=document.getElementById('thermalBar'),radBar=document.getElementById('radBar');
 let structLabels=[];
+let currentScene='mechanism';
 
 function setFlash(v){ flash.style.opacity=v; }
 function showInfo(L){ iTitle.textContent=L.name;iEn.textContent=L.en;iDesc.textContent=L.desc;iSpec.innerHTML=L.spec; }
@@ -501,7 +688,7 @@ function buildStructLabels(){
 
 function switchBomb(type){
   if(active) active.group.visible=false;
-  resetSeq(); mushroom.reset();
+  resetSeq(); mushroom.reset(); phenomena.reset(); chainViz.reset();
   active=BOMBS[type]; active.group.visible=true;
   isolated=null; applyIsolation(); buildLayerButtons(); buildStructLabels();
   subTitle.textContent=active.sub;
@@ -510,59 +697,89 @@ function switchBomb(type){
 }
 document.querySelectorAll('#bombTypes button').forEach(b=> b.onclick=()=>switchBomb(b.dataset.type));
 
+function setSceneMode(mode,activate=true){
+  currentScene=mode;
+  document.querySelectorAll('#modebar button').forEach(b=>b.classList.toggle('active',b.dataset.scene===mode));
+  if(mode==='mechanism'){
+    showBlast=false;blastGroup.visible=false;ringLabels.forEach(l=>l.style.opacity=0);
+    if(active)active.group.visible=true;
+    if(!seq.active){view='cut';clip.constant=0;camera.position.set(130,75,175);controls.target.set(0,4,0);camFocus=null;stageTxt.textContent='就绪 · 选择结构或播放时间演化';clock.textContent='概念模型';}
+    scienceNote.textContent='重点：临界并不等于“有足够多材料”，还取决于几何、密度与中子损失。这里用抽象模型解释反馈关系。';
+    if(active)showInfo(active.layers.find(l=>l.key===active.defaultKey));
+  }else if(mode==='sequence'){
+    showBlast=false;blastGroup.visible=false;
+    scienceNote.textContent='重点：链式反应和能量释放发生在极短时间内；火球、冲击波与云团属于随后完全不同的时间尺度。';
+    if(activate&&!seq.active)startSeq();
+  }else{
+    if(seq.active)resetSeq();mushroom.reset();phenomena.reset();
+    if(active)active.group.visible=false;
+    showBlast=true;blastGroup.visible=true;updateBlast();camera.position.set(0,590,650);controls.target.set(0,groundY,0);camFocus=null;
+    stage.classList.remove('live');stageTxt.textContent='效应范围 · 当量与距离为近似比较';clock.textContent=curYield+' kt';
+    scienceNote.textContent='范围只作数量级比较。实际效应会被爆高、天气、地形、建筑结构与能见度显著改变，圆环不是精确边界。';
+    showInfo({name:'效应范围 · 数量级比较',en:'Effects are not hard boundaries',desc:'圆环表示理想化条件下的近似尺度，不是安全线。冲击超压会随距离连续衰减；热效应受视线与天气影响；建筑响应还取决于结构、朝向和持续时间。',spec:'模型 <b>20 kt 基准缩放</b> · 假设 <b>示意性近地/空爆</b> · 不含 <b>天气与地形修正</b>'});
+  }
+}
+document.querySelectorAll('#modebar button').forEach(b=>b.onclick=()=>setSceneMode(b.dataset.scene));
+
 document.querySelectorAll('#viewModes button').forEach(b=>{
   b.onclick=()=>{document.querySelectorAll('#viewModes button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
     view=b.dataset.view; clip.constant=(view==='cut')?0:1000;};
 });
 
 /* 引爆序列 */
-let seq={active:false,t:0,speed:1,mushTriggered:false};
+let seq={active:false,t:0,speed:1,mushTriggered:false,phase:'micro'};
 document.getElementById('detonate').onclick=startSeq;
-document.getElementById('reset').onclick=()=>{resetSeq();mushroom.reset();focusCamera(new THREE.Vector3(0,4,0));};
+document.getElementById('reset').onclick=()=>{resetSeq();mushroom.reset();phenomena.reset();chainViz.reset();focusCamera(new THREE.Vector3(0,4,0));};
 document.getElementById('speed').oninput=e=>{seq.speed=+e.target.value;speedV.textContent=(+e.target.value).toFixed(1)+'×';};
-document.getElementById('mushBtn').onclick=()=>{ resetSeq(); mushroom.reset(); mushroom.start(); focusCamera(new THREE.Vector3(0,260,0),760);
-  stage.classList.add('live'); stageTxt.textContent='蘑菇云上升 · 烟柱形成'; };
+document.getElementById('mushBtn').onclick=()=>{ resetSeq(); mushroom.reset(); phenomena.reset(); mushroom.start(); active.group.visible=false; focusCamera(new THREE.Vector3(0,260,0),760);
+  stage.classList.add('live'); stageTxt.textContent='浮力卷吸 · 云柱与菌盖形成';clock.textContent='加速演示';scaleValue.textContent='s → min';phenValue.textContent='大气对流'; };
 
 function startSeq(){
-  resetSeq(); mushroom.reset();
-  seq.active=true; seq.t=0; seq.mushTriggered=false; stage.classList.add('live');
+  resetSeq(); mushroom.reset();phenomena.reset();chainViz.reset();
+  seq.active=true; seq.t=0; seq.phase='micro';seq.mushTriggered=false; stage.classList.add('live');
+  currentScene='sequence';document.querySelectorAll('#modebar button').forEach(b=>b.classList.toggle('active',b.dataset.scene==='sequence'));
+  active.group.visible=true;
   isolated=null; applyIsolation(); syncLayerBtns();
   view='cut'; clip.constant=0;
   document.querySelectorAll('#viewModes button').forEach(x=>x.classList.toggle('active',x.dataset.view==='cut'));
   focusCamera(new THREE.Vector3(0,4,0),190);
 }
 function resetSeq(){
-  seq.active=false; seq.t=0; seq.mushTriggered=false; stage.classList.remove('live');
+  seq.active=false; seq.t=0; seq.phase='micro';seq.mushTriggered=false; stage.classList.remove('live');
   stageTxt.textContent='就绪 · 待命'; clock.textContent='T 0.0 µs'; setFlash(0);
-  if(active){ active.resetVisual(); active.layers.forEach(L=>{L.mat.opacity=1;L.mat.transparent=true;L.mesh.visible=true;}); applyIsolation(); }
+  genValue.textContent='0';rateValue.innerHTML='0<em>%</em>';scaleValue.textContent='µs';phenValue.textContent='待机';
+  blastBar.style.width=thermalBar.style.width=radBar.style.width='0';
+  document.querySelectorAll('.time-step').forEach((x,i)=>{x.classList.toggle('active',i===0);x.classList.remove('done');});
+  if(active){ active.group.visible=true;active.resetVisual(); active.layers.forEach(L=>{L.mat.opacity=1;L.mat.transparent=true;L.mesh.visible=true;}); applyIsolation(); }
 }
 
 /* 威力 / 杀伤半径 */
 const blastGroup=new THREE.Group(); blastGroup.visible=false; scene.add(blastGroup);
-blastGroup.add(new THREE.GridHelper(1800,45,0x22304d,0x141d30)).position.y=groundY;
+const effectsGrid=new THREE.GridHelper(1800,45,0xd6b77f,0x8f6c44);effectsGrid.position.y=groundY+.3;
+effectsGrid.material.transparent=true;effectsGrid.material.opacity=.28;blastGroup.add(effectsGrid);
 const ringMeshes=[],ringLabels=[];
-const ZONES=[{name:'火球',refKm:0.18,color:0xffffff},{name:'重度冲击波 (20 psi)',refKm:0.9,color:0xff3b30},
-  {name:'热辐射三度烧伤',refKm:2.0,color:0xff8a3d},{name:'中度破坏 (5 psi)',refKm:2.8,color:0xffd24d},
-  {name:'轻度破坏 / 玻璃震碎',refKm:6.5,color:0x4dd0ff}];
+const ZONES=[{name:'发光火球（近似）',refKm:0.18,exp:.40,color:0xffffff},{name:'高超压区（约 20 psi）',refKm:0.9,exp:1/3,color:0xff3b30},
+  {name:'严重热效应（晴空示意）',refKm:2.0,exp:.41,color:0xff8a3d},{name:'显著结构破坏（约 5 psi）',refKm:2.8,exp:1/3,color:0xffd24d},
+  {name:'低超压 / 飞散物风险',refKm:6.5,exp:1/3,color:0x4dd0ff}];
 const KM=26;
 ZONES.forEach(z=>{
-  const ring=new THREE.Mesh(new THREE.RingGeometry(0.98,1,96),new THREE.MeshBasicMaterial({color:z.color,transparent:true,opacity:.55,side:THREE.DoubleSide}));
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.94,1,128),new THREE.MeshBasicMaterial({color:z.color,transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));
   ring.rotation.x=-Math.PI/2; ring.position.y=groundY+0.5;
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(1,96),new THREE.MeshBasicMaterial({color:z.color,transparent:true,opacity:.10,side:THREE.DoubleSide}));
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(1,128),new THREE.MeshBasicMaterial({color:z.color,transparent:true,opacity:.065,side:THREE.DoubleSide,depthWrite:false}));
   disc.rotation.x=-Math.PI/2; disc.position.y=groundY+0.3;
   blastGroup.add(ring); blastGroup.add(disc); ringMeshes.push({ring,disc,zone:z});
   const el=document.createElement('div'); el.className='label'; el.style.opacity=0; document.getElementById('labels').appendChild(el); ringLabels.push(el);
 });
 let showBlast=false,curYield=21;
-document.getElementById('yield').oninput=e=>{curYield=+e.target.value;yieldV.textContent=curYield;updateBlast();};
+document.getElementById('yield').oninput=e=>{curYield=+e.target.value;yieldV.textContent=curYield;updateBlast();if(showBlast)clock.textContent=curYield+' kt';};
 document.getElementById('blast').onclick=()=>{
   showBlast=!showBlast; blastGroup.visible=showBlast;
+  if(showBlast){setSceneMode('effects',false);}
   document.getElementById('blast').classList.toggle('active',showBlast);
-  if(showBlast){updateBlast();focusCamera(new THREE.Vector3(0,groundY,0),520);} else {focusCamera(new THREE.Vector3(0,4,0));ringLabels.forEach(l=>l.style.opacity=0);}
+  if(showBlast){updateBlast();} else {active.group.visible=true;focusCamera(new THREE.Vector3(0,4,0));ringLabels.forEach(l=>l.style.opacity=0);}
 };
 function updateBlast(){
-  const scale=Math.cbrt(curYield/20);
-  ringMeshes.forEach(r=>{const km=r.zone.refKm*scale,rad=km*KM;r.ring.scale.set(rad,rad,1);r.disc.scale.set(rad,rad,1);r.ring.userData.km=km;});
+  ringMeshes.forEach(r=>{const km=r.zone.refKm*Math.pow(curYield/20,r.zone.exp),rad=km*KM;r.ring.scale.set(rad,rad,1);r.disc.scale.set(rad,rad,1);r.ring.userData.km=km;});
 }
 
 document.getElementById('autoRotate').onchange=e=>controls.autoRotate=e.target.checked;
@@ -602,15 +819,40 @@ function animate(){
 
   // 引爆序列
   if(seq.active){
-    seq.t+=dt*1.6*seq.speed;
-    clock.textContent='T '+seq.t.toFixed(1)+' µs';
-    let cur=active.phases[0]; for(const p of active.phases) if(seq.t>=p.t) cur=p;
-    stageTxt.textContent=cur.txt;
-    const trigger=active.seq(seq.t);
-    if(trigger && !seq.mushTriggered){ seq.mushTriggered=true; mushroom.start(); focusCamera(new THREE.Vector3(0,260,0),780); }
-    if(seq.t>8.5){ seq.active=false; stageTxt.textContent='爆炸完成 · 点击“重置序列”'; }
+    if(seq.phase==='micro'){
+      seq.t+=dt*1.6*seq.speed;
+      clock.textContent='T + '+seq.t.toFixed(1)+' µs';scaleValue.textContent='µs';
+      let cur=active.phases[0]; for(const p of active.phases) if(seq.t>=p.t) cur=p;
+      stageTxt.textContent=cur.txt;
+      const chainStart=active.type==='fatman'?2.9:2.25;
+      if(seq.t>=chainStart){
+        const p=THREE.MathUtils.clamp((seq.t-chainStart)/1.45,0,1);
+        const origin=active.type==='fatman'?new THREE.Vector3(0,0,0):new THREE.Vector3(0,-64,0);
+        const read=chainViz.update(p,seq.t,origin);genValue.textContent=read.generation;rateValue.innerHTML=read.rate+'<em>%</em>';
+        phenValue.textContent='指数增殖';
+        document.querySelectorAll('.time-step').forEach((x,i)=>{x.classList.toggle('active',i===1);x.classList.toggle('done',i<1);});
+      }else{phenValue.textContent='进入超临界';}
+      const trigger=active.seq(seq.t);
+      if(trigger&&!seq.mushTriggered){
+        seq.mushTriggered=true;seq.phase='macro';seq.t=0;chainViz.reset();active.group.visible=false;
+        phenomena.start();mushroom.start();focusCamera(new THREE.Vector3(0,170,0),720);
+        blastBar.style.width='50%';thermalBar.style.width='35%';radBar.style.width='5%';
+      }
+    }else{
+      const macro=phenomena.update(dt*seq.speed);
+      seq.t=macro?.time||seq.t;const simulated=seq.t<1?(seq.t*20).toFixed(0)+' ms':(seq.t*4).toFixed(1)+' s';
+      clock.textContent='T + '+simulated;scaleValue.textContent=seq.t<1?'ms':'s';phenValue.textContent=macro?.phase||'大气对流';
+      stageTxt.textContent=seq.t<.7?'火球快速膨胀 · 热辐射到达':seq.t<3.2?'冲击波向外传播 · 凝结云短暂出现':seq.t<6?'冲击波衰减 · 地表反射':'浮力抬升并卷吸周围空气';
+      const idx=seq.t<.7?2:seq.t<5?2:3;document.querySelectorAll('.time-step').forEach((x,i)=>{x.classList.toggle('active',i===idx);x.classList.toggle('done',i<idx);});
+      if(seq.t>9){seq.active=false;stage.classList.remove('live');stageTxt.textContent='演示完成 · 各阶段采用不同时间比例';clock.textContent='T + 数分钟';phenValue.textContent='云团扩散';}
+    }
   }
-  mushroom.update(dt);
+  mushroom.update(dt*(seq.active?seq.speed:1));
+
+  if(showBlast&&!seq.active){
+    scaleValue.textContent='km';phenValue.textContent='效应比较';
+    genValue.textContent='—';rateValue.innerHTML='—';blastBar.style.width='50%';thermalBar.style.width='35%';radBar.style.width='5%';
+  }
 
   // 轻微自转
   if(!controls.autoRotate&&!seq.active&&!showBlast&&!mushroom.active) active.group.rotation.y+=dt*0.08;
@@ -625,7 +867,7 @@ function animate(){
   // 杀伤半径标注
   ringMeshes.forEach((r,i)=>{const el=ringLabels[i];
     if(!showBlast){el.style.opacity=0;return;}
-    const rad=r.ring.scale.x;const w=new THREE.Vector3(0,groundY+1,rad);const p=project(w);
+    const rad=r.ring.scale.x;const a=-.18+i*.20,w=new THREE.Vector3(Math.cos(a)*rad,groundY+2,Math.sin(a)*rad);const p=project(w);
     el.innerHTML=`<b>${r.zone.name}</b> · ${r.ring.userData.km?.toFixed(2)} km`;
     el.style.left=p.x+'px';el.style.top=p.y+'px';el.style.opacity=p.vis?1:0;
   });
@@ -634,6 +876,7 @@ function animate(){
 }
 
 switchBomb('fatman');
+setSceneMode('mechanism',false);
 animate();
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
